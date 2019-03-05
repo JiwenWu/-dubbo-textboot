@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--Configuration后面的status，这个用于设置log4j2自身内部的信息输出，可以不设置，当设置成trace时，你会看到log4j2内部各种详细输出,monitorinterval用于指定log4j自动重新配置的监测间隔时间，单位是s,最小是5s-->
+<Configuration status="TRACE" monitorInterval="30" shutdownHook="disable">
+    <Properties>
+        <!-- （*必须,各应用需要修改） 部署应用的名称,命名规则 :全部小写字母、中短横线、数字,与微服务命名,disconf中命名一致 -->
+        <property name="APPNAME">myclass-textboot-service</property>
+        <!-- （各应用需要修改）部署应用的端口号，用于一台服务器部署多台应用的情况,如果不需要，保持默认 -->
+        <property name="PORT">${sys:crtServerPort:-8080}</property>
+        <!-- （各应用需要修改）日志文件本地存放目录路径 建议各个环境跟生产环境统一起来,方便维护 -->
+        <property name="LOG_HOME">logs</property>
+
+        <!-- 日志文件最小切割单位 值不做强制要求，建议300MB -->
+        <property name="EVERY_FILE_SIZE">300MB</property>
+        <!-- *必须并强制遵守 日志文件的编码 -->
+        <property name="LOG_CHARSET">UTF-8</property>
+        <!-- *必须并强制遵守 日志格式说明： |日志时间|线程id|端口号|应用名称|类名|方法名|日志级别|traceId |输入参数|输出参数|耗时|任意多个扩展字段|具体打印的msg内容然后换行 -->
+        <property name="LOG_PATTERN">|%d{yyyy-MM-dd HH:mm:ss.SSS}|%t|${PORT}|${APPNAME}|%logger|%M|%p|%X{MDCCRT_GUID_TRACEID}|###+%X{MDCCRT_EXTENTS}-###|##+%X{MDCCRT_INPUT_PARAM}-##|##+%X{MDCCRT_OUTPUT_PARAM}-##|%X{MDCCRT_COST_TIME}|%m%n</property>
+    </Properties>
+
+    <Appenders>
+        <!--&lt;!&ndash;Console节点用来定义输出到控制台的Appender&ndash;&gt;-->
+        <!--&lt;!&ndash;这个输出控制台的配置，这里输出除了warn和error级别的信息到System.out &ndash;&gt;-->
+        <!--<Console name="ConsoleOut" target="SYSTEM_OUT">-->
+            <!--&lt;!&ndash; 控制台只输出level及以上级别的信息(onMatch),其他的直接拒绝(onMismatch) . &ndash;&gt;-->
+            <!--<ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY" />-->
+            <!--&lt;!&ndash; 输出日志的格式 &ndash;&gt;-->
+            <!--<PatternLayout pattern="${LOG_PATTERN}" />-->
+        <!--</Console>-->
+        <!--&lt;!&ndash; 这个输出控制台的配置，这里输出error级别的信息到System.err，在eclipse控制台上看到的是红色文字 &ndash;&gt;-->
+        <!--<Console name="ConsoleErr" target="SYSTEM_ERR">-->
+            <!--<ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />-->
+            <!--<PatternLayout pattern="${LOG_PATTERN}" />-->
+        <!--</Console>-->
+
+        <!--&lt;!&ndash;文件会打印出所有信息，这个log每次运行程序会自动清空，由append属性决定，这个也挺有用的，适合临时测试用&ndash;&gt;-->
+        <!--<File name="test_log" fileName="${LOG_HOME}/test.log" append="false">-->
+            <!--<PatternLayout pattern="${LOG_PATTERN}" />-->
+        <!--</File>-->
+
+        <!-- INFO级别日志 -->
+        <RollingRandomAccessFile name="info_appender"
+                                 fileName="${LOG_HOME}/info.log"
+                                 filePattern="${LOG_HOME}/info/info-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout charset="${LOG_CHARSET}" pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy modulate="true" interval="1" />
+                <SizeBaseDTriggeringPolicy size="${EVERY_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+            <Filters>
+                <ThresholdFilter level="warn" onMatch="DENY" onMismatch="NEUTRAL" />
+                <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+        </RollingRandomAccessFile>
+
+        <!-- WARN级别日志 -->
+        <RollingRandomAccessFile name="warn_appender"
+                                 fileName="${LOG_HOME}/warn.log"
+                                 filePattern="${LOG_HOME}/warn/warn-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout charset="${LOG_CHARSET}" pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy modulate="true" interval="1" />
+                <SizeBaseDTriggeringPolicy size="${EVERY_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+            <Filters>
+                <ThresholdFilter level="error" onMatch="DENY" onMismatch="NEUTRAL" />
+                <ThresholdFilter level="warn" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+        </RollingRandomAccessFile>
+
+        <!-- ERROR级别日志 -->
+        <RollingRandomAccessFile name="error_appender"
+                                 fileName="${LOG_HOME}/error.log"
+                                 filePattern="${LOG_HOME}/error/error-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout charset="${LOG_CHARSET}" pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy modulate="true" interval="1" />
+                <SizeBaseDTriggeringPolicy size="${EVERY_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+            <Filters>
+                <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <!--然后定义logger，只有定义了logger并引入的appender，appender才会生效-->
+    <loggers>
+        <root level="info">
+            <!-- 日志输出至Console，仅在IDE开发时打开方便开发人员-->
+            <!--<appender-ref ref="console_out_appender" />-->
+            <!--<appender-ref ref="console_err_appender" />-->
+
+            <!--<appender-ref ref="test_log" />-->
+
+            <!-- 各应用自行调整，日志输出至文件，自动按时间、按文件大小进行归档 ,生产环境调默认为INFO-->
+            <appender-ref ref="info_appender" />
+            <appender-ref ref="warn_appender" />
+
+            <!-- 异常日志，不用改动 -->
+            <appender-ref ref="error_appender" />
+        </root>
+
+        <!-- 第三方日志系统 -->
+        <!--过滤掉spring和mybatis的一些无用的DEBUG信息-->
+        <logger name="org.springframework.core" level="info" />
+        <logger name="org.springframework.beans" level="info" />
+        <logger name="org.springframework.context" level="info" />
+        <logger name="org.springframework.web" level="info" />
+        <logger name="org.springframework" level="warn" />
+        <logger name="org.mybatis" level="warn" />
+        <logger name="com.alibaba.dubbo" level="warn" />
+        <logger name="org.apache.curator" level="warn" />
+        <logger name="org.apache.zookeeper" level="warn" />
+    </loggers>
+</Configuration>
