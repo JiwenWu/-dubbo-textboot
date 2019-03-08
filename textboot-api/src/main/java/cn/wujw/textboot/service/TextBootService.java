@@ -50,4 +50,11 @@ public interface TextBootService {
      * @return
      */
     ResultBody exportExcel(List<List<String>> listData);
+
+    /**
+     * 解析图片中的文字内容
+     * @param url
+     * @return
+     */
+    ResultBody ocrImage(String url);
 }

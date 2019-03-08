@@ -1,6 +1,7 @@
 package cn.wujw.textboot.service;
 
 import cn.wujw.textboot.common.AliyunOssUtils;
+import cn.wujw.textboot.common.FileUtils;
 import cn.wujw.textboot.common.RedisCacheManager;
 import cn.wujw.textboot.common.StringUtil;
 import cn.wujw.textboot.enums.FileSuffix;
@@ -9,18 +10,18 @@ import cn.wujw.textboot.enums.DataLocation;
 import cn.wujw.textboot.model.ResultBody;
 import cn.wujw.textboot.support.ExcelExportConver;
 import cn.wujw.textboot.support.ExcelImportConver;
+import com.alibaba.fastjson.JSON;
+import com.baidu.aip.ocr.AipOcr;
 import org.apache.commons.collections4.CollectionUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.io.*;
+import java.util.*;
 
 /**
  * Desc:
@@ -38,6 +39,9 @@ public class TextBootServiceImpl implements TextBootService {
 
     @Autowired
     private AliyunOssUtils aliyunOssUtils;
+
+    @Autowired
+    private AipOcr aipOcr;
 
     @Override
     public String ping() {
@@ -128,6 +132,36 @@ public class TextBootServiceImpl implements TextBootService {
             List<String> list = new ArrayList<>();
             list.add(url);
             resultBody.success(list);
+        }
+        return resultBody;
+    }
+
+    public ResultBody ocrImage(String url){
+        ResultBody resultBody = new ResultBody();
+        String uuid = UUID.randomUUID().toString().replace("-","");
+        aliyunOssUtils.downloadFile(url,uuid);
+        try {
+            byte[] bytes = FileUtils.readFileByBytes(uuid);
+            HashMap<String, String> options = new HashMap<>();
+            options.put("language_type", "CHN_ENG");
+            options.put("detect_direction", "true");
+            options.put("detect_language", "true");
+            options.put("probability", "true");
+            System.out.println(aipOcr.toString());
+
+            JSONObject jsonObject = aipOcr.accurateGeneral(bytes, options);
+            JSONArray wordsResult = jsonObject.getJSONArray("words_result");
+            Iterator<Object> iterator = wordsResult.iterator();
+            StringBuilder stringBuilder = new StringBuilder();
+            while (iterator.hasNext()){
+                Object next = iterator.next();
+                HashMap hashMap = JSON.parseObject(next.toString(), HashMap.class);
+                stringBuilder.append(hashMap.get("words"));
+            }
+            resultBody.success(Arrays.asList(stringBuilder.toString()));
+            return resultBody;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return resultBody;
     }
