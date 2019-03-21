@@ -15,8 +15,6 @@ import java.util.List;
  */
 public interface TextBootService {
 
-    String ping();
-
     /**
      * 获取excel数据
      * @param startIndex 起始行

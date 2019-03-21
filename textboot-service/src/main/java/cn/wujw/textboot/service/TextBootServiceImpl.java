@@ -3,7 +3,6 @@ package cn.wujw.textboot.service;
 import cn.wujw.textboot.common.AliyunOssUtils;
 import cn.wujw.textboot.common.FileUtils;
 import cn.wujw.textboot.common.RedisCacheManager;
-import cn.wujw.textboot.common.StringUtil;
 import cn.wujw.textboot.enums.FileSuffix;
 import cn.wujw.textboot.factory.ExcelRuleBuilder;
 import cn.wujw.textboot.enums.DataLocation;
@@ -42,11 +41,6 @@ public class TextBootServiceImpl implements TextBootService {
 
     @Autowired
     private AipOcr aipOcr;
-
-    @Override
-    public String ping() {
-        return "ping success";
-    }
 
     @Override
     public ResultBody urlToExcelData(int startIndex, String fileUrl, DataLocation dataLocation) {
@@ -112,11 +106,7 @@ public class TextBootServiceImpl implements TextBootService {
         InputStream inputStream = excelExportConver.commonExport();
 
         String url = aliyunOssUtils.uploadFileStream(inputStream, FileSuffix.XLSX);
-        if (!StringUtil.isBlank(url)){
-            List<String> list = new ArrayList<>();
-            list.add(url);
-            resultBody.success(list);
-        }
+        resultBody.success(url);
         return resultBody;
     }
 
@@ -139,12 +129,11 @@ public class TextBootServiceImpl implements TextBootService {
         aliyunOssUtils.downloadFile(url,uuid);
         try {
             byte[] bytes = FileUtils.readFileByBytes(uuid);
-            HashMap<String, String> options = new HashMap<>();
+            HashMap<String, String> options = new HashMap<>(16);
             options.put("language_type", "CHN_ENG");
             options.put("detect_direction", "true");
             options.put("detect_language", "true");
             options.put("probability", "true");
-            System.out.println(aipOcr.toString());
 
             JSONObject jsonObject = aipOcr.accurateGeneral(bytes, options);
             JSONArray wordsResult = jsonObject.getJSONArray("words_result");
