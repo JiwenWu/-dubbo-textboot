@@ -128,14 +128,11 @@ public class TextBootServiceImpl implements TextBootService {
         InputStream inputStream = excelExportConver.commonExport();
 
         String url = aliyunOssUtils.uploadFileStream(inputStream, FileSuffix.XLSX);
-        if (!StringUtil.isBlank(url)){
-            List<String> list = new ArrayList<>();
-            list.add(url);
-            resultBody.success(list);
-        }
+        resultBody.success(url);
         return resultBody;
     }
 
+    @Override
     public ResultBody ocrImage(String url){
         ResultBody resultBody = new ResultBody();
         String uuid = UUID.randomUUID().toString().replace("-","");

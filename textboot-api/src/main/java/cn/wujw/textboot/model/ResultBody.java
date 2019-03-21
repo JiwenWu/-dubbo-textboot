@@ -20,8 +20,7 @@ public class ResultBody implements Serializable {
 
     private int code;
     private String message;
-    private List<?> data;
-    private String key;
+    private Object data;
 
     public ResultBody success(List data){
         this.code = SUCCESS;
@@ -30,12 +29,13 @@ public class ResultBody implements Serializable {
         return this;
     }
 
-    public ResultBody success(String key){
+    public ResultBody success(String data){
         this.code = SUCCESS;
         this.message = "操作成功";
-        this.key = key;
+        this.data = data;
         return this;
     }
+
 
     public ResultBody error(String message){
         this.code = ERROR;
@@ -43,7 +43,7 @@ public class ResultBody implements Serializable {
         return this;
     }
 
-    public ResultBody failed(List data){
+    public ResultBody failed(Object data){
         this.code = FAILED;
         this.message = "校验失败";
         this.data = data;
@@ -63,17 +63,25 @@ public class ResultBody implements Serializable {
         return data;
     }
 
-    public String getKey() {
-        return key;
+    public void setCode(int code) {
+        this.code = code;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
     }
 
     @Override
     public String toString() {
-        return "ResultBody{" +
-                "code=" + code +
-                ", message='" + message + '\'' +
-                ", data=" + data +
-                ", key='" + key + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("ResultBody{");
+        sb.append("code=").append(code);
+        sb.append(", message='").append(message).append('\'');
+        sb.append(", data=").append(data);
+        sb.append('}');
+        return sb.toString();
     }
 }

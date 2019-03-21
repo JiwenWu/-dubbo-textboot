@@ -48,7 +48,7 @@ public abstract class ExcelReaderAbstract extends DefaultHandler {
     private StylesTable stylesTable;
     private int currentRowIndex = 0;
     private String curCellName = "";
-    private int currentSheetIndex = -1;
+    private int currentSheetIndex = 0;
     private XssfDataType dataType;
 
     private Map<String,String> rowValueMap = new HashMap<>();
@@ -83,13 +83,18 @@ public abstract class ExcelReaderAbstract extends DefaultHandler {
             while (sheets.hasNext()) {
                 currentRowIndex = 0;
                 currentSheetIndex ++;
+                // 只读取第一个sheet
+                if (currentSheetIndex >= 2) {
+                    sheet = sheets.next();
+                    continue;
+                }
 
                 try {
                     sheet = sheets.next();
                     sheetSource = new InputSource(sheet);
 
                     try {
-                        logger.info("开始读取第{}个Sheet!",currentSheetIndex + 1);
+                        logger.info("开始读取第{}个Sheet!",currentSheetIndex);
                         parser.parse(sheetSource);
                     }catch (Exception e){
                         throw new Exception(e);

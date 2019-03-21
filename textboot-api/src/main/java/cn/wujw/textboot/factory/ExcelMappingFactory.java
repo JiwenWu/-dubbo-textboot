@@ -16,7 +16,9 @@ import java.util.List;
  * @date 2019-02-27
  */
 public enum  ExcelMappingFactory {
-
+    /**
+     * 枚举单利模式
+     */
     INSTANCE;
 
     public ExcelRuleBuilder builder(Class<? extends BasicModel> clazz){
@@ -34,10 +36,11 @@ public enum  ExcelMappingFactory {
                 columnField.setColumn(annotation.column());
                 columnField.setScale(annotation.scale());
                 columnField.setFiled(field.getName());
-                columnField.setFiledType(field.getGenericType());
+                columnField.setFiledType(field.getType());
                 columnField.setRegex(annotation.regex());
                 columnField.setRegexMessage(annotation.regexMessage());
                 columnField.setRoundingMode(annotation.roundingMode());
+                columnField.setDateFormat(annotation.dataFormat());
                 list.add(columnField);
             }
         }

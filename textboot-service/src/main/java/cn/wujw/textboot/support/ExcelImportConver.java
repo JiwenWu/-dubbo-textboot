@@ -7,6 +7,7 @@ import cn.wujw.textboot.exception.TextBootException;
 import cn.wujw.textboot.model.ColumnField;
 import cn.wujw.textboot.model.ErrorEntity;
 import cn.wujw.textboot.factory.ExcelRuleBuilder;
+import java.math.BigDecimal;
 import org.apache.commons.collections4.CollectionUtils;
 
 
@@ -221,23 +222,48 @@ public class ExcelImportConver {
                                errorEntityList.add(errorEntity);
                                canPut = false;
                            }
-                           if (StringUtil.isNumeric(value)){
-
-                           }
-
                         }
-
-                        // 精度校验，前提是数字
-
                     }
                     if (canPut) {
-                        map.put(field.getFiled(), value);
+                        map.put(field.getFiled(), convertCellValue(field,value));
                     }
                 }
             }
             buildDataList.add(map);
         }
     }
+
+    private Object convertCellValue(ColumnField field, String cellValue) {
+        Object value = null;
+        Class filedClazz = field.getFiledType();
+        if (filedClazz == Date.class) {
+            try {
+                value =  DateFormatUtil.parse(field.getDateFormat(), cellValue);
+            } catch (Exception e) {
+                value = cellValue;
+            }
+        } else if (filedClazz == Short.class || filedClazz == short.class) {
+            value = Short.valueOf(cellValue);
+        } else if (filedClazz == Integer.class || filedClazz == int.class) {
+            value = Integer.valueOf(cellValue);
+        } else if (filedClazz == Double.class || filedClazz == double.class) {
+            value = Double.valueOf(cellValue);
+        } else if (filedClazz == Long.class || filedClazz == long.class) {
+            value = Long.valueOf(cellValue);
+        } else if (filedClazz == Float.class || filedClazz == float.class) {
+            value = Float.valueOf(cellValue);
+        } else if (filedClazz == BigDecimal.class) {
+            if (field.getScale() == -1) {
+                value = new BigDecimal(cellValue);
+            } else {
+                value = new BigDecimal(cellValue).setScale(field.getScale(), field.getRoundingMode());
+            }
+        } else if (filedClazz != String.class) {
+            value = cellValue;
+        }
+        return value;
+    }
+
 
     public void converData() throws Exception {
         if(builder != null){

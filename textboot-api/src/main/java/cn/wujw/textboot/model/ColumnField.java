@@ -19,7 +19,7 @@ public class ColumnField implements Serializable {
     /**
      * 字段属性
      */
-    private Type filedType;
+    private Class<?> filedType;
     /**
      * 是否必填
      */
@@ -45,6 +45,20 @@ public class ColumnField implements Serializable {
      */
     private String regexMessage = "正则校验不通过";
 
+    /**
+     * 日期格式 默认 yyyy-MM-dd HH:mm:ss
+     *
+     * @return
+     */
+    private String dateFormat;
+
+    public String getDateFormat() {
+        return dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
 
     public String getFiled() {
         return filed;
@@ -55,11 +69,11 @@ public class ColumnField implements Serializable {
         return this;
     }
 
-    public Type getFiledType() {
+    public Class<?> getFiledType() {
         return filedType;
     }
 
-    public ColumnField setFiledType(Type filedType) {
+    public ColumnField setFiledType(Class<?> filedType) {
         this.filedType = filedType;
         return this;
     }
