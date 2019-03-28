@@ -2,7 +2,9 @@ package cn.wujw.textboot.service;
 
 import cn.wujw.textboot.common.AliyunOssUtils;
 import cn.wujw.textboot.common.FileUtils;
+import cn.wujw.textboot.common.IOUtils;
 import cn.wujw.textboot.common.RedisCacheManager;
+import cn.wujw.textboot.common.StringUtil;
 import cn.wujw.textboot.enums.FileSuffix;
 import cn.wujw.textboot.factory.ExcelRuleBuilder;
 import cn.wujw.textboot.enums.DataLocation;
@@ -12,6 +14,7 @@ import cn.wujw.textboot.support.ExcelImportConver;
 import com.alibaba.fastjson.JSON;
 import com.baidu.aip.ocr.AipOcr;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -44,58 +47,14 @@ public class TextBootServiceImpl implements TextBootService {
 
     @Override
     public ResultBody urlToExcelData(int startIndex, String fileUrl, DataLocation dataLocation) {
-        ResultBody resultBody = new ResultBody();
-
         ExcelImportConver excelImportConver = new ExcelImportConver(startIndex,fileUrl);
-        try {
-            excelImportConver.converData();
-            switch (dataLocation){
-                case SYNC:
-                    resultBody.success(excelImportConver.getDataList());
-                    break;
-                case REDIS:
-                    String redisKey = UUID.randomUUID().toString().replace("-","");
-                    resultBody.success(redisKey);
-                    redisCacheManager.set(redisKey,excelImportConver.getDataList(),3600);
-                    logger.info(">>>>>>>>> 存入redis,key{}",redisKey);
-                    break;
-                default:
-            }
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
-            resultBody.error(e.getMessage());
-        }
-
-        return resultBody;
+        return getResultBody(dataLocation, excelImportConver,false);
     }
 
     @Override
     public ResultBody urlToValidateExcelData(int startIndex, String fileUrl, ExcelRuleBuilder builder, DataLocation dataLocation) {
-        ResultBody resultBody = new ResultBody();
         ExcelImportConver excelImportConver = new ExcelImportConver(startIndex,fileUrl,builder);
-        try {
-            excelImportConver.converData();
-            if (CollectionUtils.isNotEmpty(excelImportConver.getErrorEntityList())){
-                resultBody.failed(excelImportConver.getErrorEntityList());
-                return resultBody;
-            }
-            switch (dataLocation){
-                case SYNC:
-                    resultBody.success(excelImportConver.getBuildDataList());
-                    break;
-                case REDIS:
-                    String redisKey = UUID.randomUUID().toString().replace("-","");
-                    resultBody.success(redisKey);
-                    redisCacheManager.set(redisKey,excelImportConver.getBuildDataList(),3600);
-                    logger.info(">>>>>>>>> 存入redis,key{}",redisKey);
-                    break;
-                default:
-            }
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
-            resultBody.error(e.getMessage());
-        }
-        return resultBody;
+        return getResultBody(dataLocation, excelImportConver,true);
     }
 
     @Override
@@ -106,7 +65,9 @@ public class TextBootServiceImpl implements TextBootService {
         InputStream inputStream = excelExportConver.commonExport();
 
         String url = aliyunOssUtils.uploadFileStream(inputStream, FileSuffix.XLSX);
-        resultBody.success(url);
+        if (!StringUtils.isBlank(url)){
+            resultBody.success(url);
+        }
         return resultBody;
     }
 
@@ -118,7 +79,66 @@ public class TextBootServiceImpl implements TextBootService {
         InputStream inputStream = excelExportConver.commonExport();
 
         String url = aliyunOssUtils.uploadFileStream(inputStream, FileSuffix.XLSX);
-        resultBody.success(url);
+        if (!StringUtil.isBlank(url)){
+            resultBody.success(url);
+        }
+        return resultBody;
+    }
+
+    @Override
+    public byte[] exportStreamExcel(List<List<String>> listData) {
+        ExcelExportConver excelExportConver = new ExcelExportConver(listData);
+        InputStream inputStream = excelExportConver.commonExport();
+        return IOUtils.inputStream2ByteArray(inputStream);
+    }
+
+    @Override
+    public byte[] exportStreamExcel(String[] headData, List<List<String>> listData) {
+        ExcelExportConver excelExportConver = new ExcelExportConver(listData,headData);
+        InputStream inputStream = excelExportConver.commonExport();
+        return IOUtils.inputStream2ByteArray(inputStream);
+    }
+
+    @Override
+    public ResultBody streamToExcelData(int startIndex, byte[] fileBytes, DataLocation dataLocation) {
+        ExcelImportConver excelImportConver = new ExcelImportConver(startIndex,new ByteArrayInputStream(fileBytes));
+        return getResultBody(dataLocation, excelImportConver,false);
+    }
+
+    @Override
+    public ResultBody streamToValidateExcelData(int startIndex, byte[] fileBytes, ExcelRuleBuilder builder, DataLocation dataLocation) {
+        ExcelImportConver excelImportConver = new ExcelImportConver(startIndex,new ByteArrayInputStream(fileBytes),builder);
+        return getResultBody(dataLocation, excelImportConver,true);
+    }
+
+    /**
+     * 获取返回数据
+     * @param dataLocation 数据返回方式
+     * @param excelImportConver 转化对象
+     * @param validate 是否有校验builder
+     * @return
+     */
+    private ResultBody getResultBody(DataLocation dataLocation, ExcelImportConver excelImportConver,boolean validate) {
+        ResultBody resultBody = new ResultBody();
+        try {
+            excelImportConver.converData();
+            if (CollectionUtils.isNotEmpty(excelImportConver.getErrorEntityList())){
+                return resultBody.failed(excelImportConver.getErrorEntityList());
+            }
+            switch (dataLocation){
+                case SYNC:
+                    return resultBody.success(validate ? excelImportConver.getBuildDataList() : excelImportConver.getDataList());
+                case REDIS:
+                    String redisKey = UUID.randomUUID().toString().replace("-","");
+                    redisCacheManager.set(redisKey,validate ? excelImportConver.getBuildDataList() : excelImportConver.getDataList(),3600);
+                    logger.info(">>>>>>>>> 存入redis,key{}",redisKey);
+                    return resultBody.success(redisKey);
+                default:
+            }
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage());
+            return resultBody.error(e.getMessage());
+        }
         return resultBody;
     }
 

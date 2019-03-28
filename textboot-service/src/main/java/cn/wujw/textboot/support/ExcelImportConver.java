@@ -126,11 +126,11 @@ public class ExcelImportConver {
         for (Map<String, String> map : excelData) {
             newMap = new HashMap<>();
             for (String key : headData.keySet()) {
-                 if (map.get(key) != null){
-                     newMap.put(Letter2Number.getNumber(key),map.get(key));
-                 }else {
-                     newMap.put(Letter2Number.getNumber(key),"");
-                 }
+                if (map.get(key) != null){
+                    newMap.put(Letter2Number.getNumber(key),map.get(key));
+                }else {
+                    newMap.put(Letter2Number.getNumber(key),"");
+                }
             }
             dataList.add(newMap);
         }
@@ -149,7 +149,8 @@ public class ExcelImportConver {
         }
         // 连续的真实列
         List<Integer> realList = new ArrayList<>();
-        for (int i = 1; i <= Collections.max(excleHeadList); i++) {
+        int max = Collections.max(excleHeadList);
+        for (int i = 1; i <= max; i++) {
             realList.add(i);
         }
         realList.removeAll(excleHeadList);
@@ -190,7 +191,8 @@ public class ExcelImportConver {
         buildDataList = new ArrayList<>();
         errorEntityList = new ArrayList<>();
         // 开始组装和校验数据
-        for (int i = startIndex + 1; i < dataList.size(); i++) {
+        int size = dataList.size();
+        for (int i = startIndex + 1; i < size; i++) {
             Map<String, Object> map = new HashMap<>();
             for (Map.Entry<Integer, String> entry : dataList.get(i).entrySet()) {
 
@@ -212,16 +214,16 @@ public class ExcelImportConver {
                     } else if (StringUtil.isNotEmpty(value)){
                         // 有值，则进行下一步的校验
                         if (StringUtil.isNotEmpty(field.getRegex())){
-                           if (!RegexUtil.isMatch(field.getRegex(),value)){
-                               errorEntity = new ErrorEntity();
-                               errorEntity.setErrorMessage(field.getRegexMessage());
-                               errorEntity.setCellValue(value);
-                               errorEntity.setRowIndex(i);
-                               errorEntity.setCellIndex(entry.getKey());
-                               errorEntity.setColumnName(field.getColumn());
-                               errorEntityList.add(errorEntity);
-                               canPut = false;
-                           }
+                            if (!RegexUtil.isMatch(field.getRegex(),value)){
+                                errorEntity = new ErrorEntity();
+                                errorEntity.setErrorMessage(field.getRegexMessage());
+                                errorEntity.setCellValue(value);
+                                errorEntity.setRowIndex(i);
+                                errorEntity.setCellIndex(entry.getKey());
+                                errorEntity.setColumnName(field.getColumn());
+                                errorEntityList.add(errorEntity);
+                                canPut = false;
+                            }
                         }
                     }
                     if (canPut) {
@@ -231,47 +233,46 @@ public class ExcelImportConver {
             }
             buildDataList.add(map);
         }
+        dataList.clear();
+        dataList = null;
     }
 
     private Object convertCellValue(ColumnField field, String cellValue) {
         Object value = null;
-        Class filedClazz = field.getFiledType();
-        if (filedClazz == Date.class) {
+        String filedClazz = field.getFiledType().getName();
+        if (filedClazz.equals(Date.class.getName())) {
             try {
                 value =  DateFormatUtil.parse(field.getDateFormat(), cellValue);
             } catch (Exception e) {
-                value = cellValue;
+                return cellValue;
             }
-        } else if (filedClazz == Short.class || filedClazz == short.class) {
+        } else if (filedClazz.equals(Short.class.getName()) || filedClazz.equals(short.class.getName())) {
             value = Short.valueOf(cellValue);
-        } else if (filedClazz == Integer.class || filedClazz == int.class) {
+        } else if (filedClazz.equals(Integer.class.getName()) || filedClazz.equals(int.class.getName())) {
             value = Integer.valueOf(cellValue);
-        } else if (filedClazz == Double.class || filedClazz == double.class) {
+        } else if (filedClazz.equals(Double.class.getName()) || filedClazz.equals(double.class.getName())) {
             value = Double.valueOf(cellValue);
-        } else if (filedClazz == Long.class || filedClazz == long.class) {
+        } else if (filedClazz.equals(Long.class.getName()) || filedClazz.equals(long.class.getName())) {
             value = Long.valueOf(cellValue);
-        } else if (filedClazz == Float.class || filedClazz == float.class) {
+        } else if (filedClazz.equals(Float.class.getName()) || filedClazz.equals(float.class.getName())) {
             value = Float.valueOf(cellValue);
-        } else if (filedClazz == BigDecimal.class) {
+        } else if (filedClazz.equals(BigDecimal.class.getName())) {
             if (field.getScale() == -1) {
                 value = new BigDecimal(cellValue);
             } else {
                 value = new BigDecimal(cellValue).setScale(field.getScale(), field.getRoundingMode());
             }
-        } else if (filedClazz != String.class) {
-            value = cellValue;
+        } else {
+            return cellValue;
         }
         return value;
     }
-
 
     public void converData() throws Exception {
         if(builder != null){
             if (CollectionUtils.isNotEmpty(builder.getColumnFieldList())){
                 this.initExcle();
                 this.buildData();
-                this.dataList.clear();
-                dataList = null;
             }else {
                 throw new TextBootException("无有效注解");
             }

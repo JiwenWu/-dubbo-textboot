@@ -19,7 +19,7 @@ public enum FileSuffix {
     /**
      * word
      */
-    WORD("word");
+    WORD("docx");
 
     private String suffix;
 

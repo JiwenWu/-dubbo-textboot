@@ -80,7 +80,7 @@ public class AliyunOssUtils {
      * @return
      */
     private  String getUUID() {
-        return GetUniqueNO() + GetRandom(4);
+        return getUniqueNO() + getRandom(4);
     }
 
     /**
@@ -88,7 +88,7 @@ public class AliyunOssUtils {
      *
      * @return
      */
-    private String GetUniqueNO() {
+    private String getUniqueNO() {
         java.util.Date curDate = new java.util.Date(System.currentTimeMillis());
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmssSSSS");
         return formatter.format(curDate);
@@ -101,7 +101,7 @@ public class AliyunOssUtils {
      *            随机数位数
      * @return
      */
-    private String GetRandom(int length) {
+    private String getRandom(int length) {
         StringBuilder strval = new StringBuilder();
         if (length < 4) {
             length = 4;

@@ -26,10 +26,6 @@ public class TextbootExampleApplication {
        // String url = "https://ys-files.oss-cn-hangzhou.aliyuncs.com/export/20190301/2019030114173101261107.xlsx";
         TextBootService textBootService = run.getBean(TextBootService.class);
 
-        long a = System.currentTimeMillis();
-        String  s = textBootService.ping();
-        System.out.println(System.currentTimeMillis()-a);
-        System.out.println(s);
 //
         long b = System.currentTimeMillis();
         ResultBody data = textBootService.urlToExcelData(0, url, DataLocation.REDIS);
